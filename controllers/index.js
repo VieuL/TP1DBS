@@ -85,8 +85,8 @@ function data(req, res) {
 		try{
 			const payload = jwt.verify(token,  "My so secret sentence")
 			console.log("Validée")
-			const check = verificationTokenRedis(tokenbis);
-			console.log(check)
+			// const check = verificationTokenRedis(tokenbis);
+			// console.log(check)
 			// REDIS Début
 			client.exists(tokenbis, function(err, data){
 
