@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const redis = require("redis");
 const client = redis.createClient();
+const passport = require("passport");
+
 client.on("error", function(error) {
 	console.error(error);
 });
@@ -72,12 +74,9 @@ function verificationTokenRedis(t){
 }
 
 function creationRedis(t){
-
-	client.set(t,'1')
-	// Ajout du ttl
+	client.set(t,0);
+	//Ajout du ttl
 	client.expire(t, 600);
-
-
 }
 
 
@@ -90,7 +89,7 @@ function data(req, res) {
 		console.log('=========================== \n');
 		console.log('Début de la fonction data \n')
 
-		// Si le token est ok
+		// Si le token est bon.
 		try{
 			const payload = jwt.verify(token,  "My so secret sentence")
 			console.log("Validée")
@@ -103,18 +102,20 @@ function data(req, res) {
 				//Incrémentation de la valeur et vérification de la valeur
 				client.get(tokenbis, function(err, value) {
 					if (err) throw err;
+					// Si il y a eu moins de 10 appel alors nous donnons les données
 					if(value < 10) {
 						client.incr(tokenbis);
-						console.log("Je suis moins de 10", value);
+						console.log("Je suis à moins de 10", value);
 						res.send('Voila les données');
 					}
+					// Si nous avons eu trop de requet
 					else {
 						console.log("Trop d'utilisation pour le TOKEN en question, ", value)
 						res.send('trop de requette att 10min');
 					}
 				  });
 
-				// Le token est deja présent dans la base de données
+			// Le token est deja présent dans la base de données
 			} else {
 				console.log("Cas 2 : ")
 				// Création du token dans la base de données
@@ -135,6 +136,7 @@ function data(req, res) {
 
 
 }
+
 
 module.exports.signin = signin;
 module.exports.signup = signup;
