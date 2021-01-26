@@ -69,16 +69,8 @@ function profile(req, res) {
 
 // Fonction pour redis
 function verificationTokenRedis(t){
-
-	return client.get(t);
+	return client.exists(t);
 }
-
-function creationRedis(t){
-	client.set(t,0);
-	//Ajout du ttl
-	client.expire(t, 600);
-}
-
 
 
 
@@ -93,35 +85,33 @@ function data(req, res) {
 		try{
 			const payload = jwt.verify(token,  "My so secret sentence")
 			console.log("Validée")
-
-			console.log('Ma rep est :', verificationTokenRedis(tokenbis))
+			const check = verificationTokenRedis(tokenbis);
+			console.log(check)
 			// REDIS Début
-			if(verificationTokenRedis(tokenbis) != false){
-				console.log("Cas 1 : ")
+			client.exists(tokenbis, function(err, data){
 
-				//Incrémentation de la valeur et vérification de la valeur
-				client.get(tokenbis, function(err, value) {
-					if (err) throw err;
-					// Si il y a eu moins de 10 appel alors nous donnons les données
-					if(value < 10) {
-						client.incr(tokenbis);
-						console.log("Je suis à moins de 10", value);
-						res.send('Voila les données');
-					}
-					// Si nous avons eu trop de requet
-					else {
-						console.log("Trop d'utilisation pour le TOKEN en question, ", value)
-						res.send('trop de requette att 10min');
-					}
-				  });
+				// Si le token n'est pas dans la base donc init
+                if (data === 0){
+                    client.set(tokenbis, 0);
+                    client.expire(tokenbis, 600);
+                    res.send("Voici les données");
+				}
 
-			// Le token est deja présent dans la base de données
-			} else {
-				console.log("Cas 2 : ")
-				// Création du token dans la base de données
-				creationRedis(tokenbis);
-			}
-
+				// si le token est dans la base
+                else {
+					client.get(tokenbis, function(err, val){
+						// Nous vérifions la valeur de token
+						if (val < 10){
+							client.incr(tokenbis);
+							client.ttl(tokenbis, redis.print);
+							client.get(tokenbis, redis.print);
+							res.send("Voici les données");
+						}
+						else{
+							res.send("Trop de requete en 10min");
+						}
+                })
+            }});
 
 		// Si le token n'est pas ok
 		} catch(error) {
