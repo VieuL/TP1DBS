@@ -12,7 +12,6 @@ function createToken(user) {
 }
 
 function signin(req, res) {
-
     let User = require('../models/user');
 	User.findOne({username: req.body.account}, function(err, user) {
 		if (err)
@@ -22,7 +21,7 @@ function signin(req, res) {
             req.session.username = req.body.account;
 			req.session.logged = true;
 			let t = createToken(user);
-			console.log(t);
+			console.log("Le token est : ", t);
 			res.status(200).json({token: t});
 		}
 		else
@@ -56,16 +55,6 @@ function signout(req, res) {
 
 }
 
-function profile(req, res) {
-
-	console.log(req.session.logged)
-    if (req.session.logged)
-        res.send("Bonjour");
-    else
-        res.redirect('/');
-
-}
-
 
 // Fonction pour redis
 function verificationTokenRedis(t){
@@ -75,26 +64,24 @@ function verificationTokenRedis(t){
 
 
 function data(req, res) {
+	// Si une session est en cours
 	if(req.session.logged){
 		const tokenbis = req.header('Authorization')
 		const token = req.header('Authorization').replace('Bearer ', '')
-		console.log('=========================== \n');
-		console.log('Début de la fonction data \n')
+		console.log('===========================');
 
 		// Si le token est bon.
 		try{
 			const payload = jwt.verify(token,  "My so secret sentence")
-			console.log("Validée")
-			// const check = verificationTokenRedis(tokenbis);
-			// console.log(check)
+			console.log("Token Validée")
 			// REDIS Début
 			client.exists(tokenbis, function(err, data){
-
 				// Si le token n'est pas dans la base donc init
                 if (data === 0){
                     client.set(tokenbis, 0);
-                    client.expire(tokenbis, 600);
-                    res.send("Voici les données");
+					client.expire(tokenbis, 600);
+					console.log("Accès aux données validée")
+                    res.status(200).send("Voici les données");
 				}
 
 				// si le token est dans la base
@@ -105,25 +92,27 @@ function data(req, res) {
 							client.incr(tokenbis);
 							client.ttl(tokenbis, redis.print);
 							client.get(tokenbis, redis.print);
-							res.send("Voici les données");
+							console.log("Accès aux données validée")
+							res.status(200).send("Voici les données");
 						}
 						else{
-							res.send("Trop de requete en 10min");
+							console.log("Accès aux données refusée")
+							res.status(401).send("Trop de requete en 10min");
 						}
                 })
             }});
 
 		// Si le token n'est pas ok
 		} catch(error) {
-			res.send('Token non valide');
+			res.status(403).send('Token non valide');
 			console.error(error.message);
-			console.log("Courage")
 		}
 
-	} else {
-		res.send('Merci de vous co')
 	}
-
+	// Si la personne n'est pas connectée
+	else {
+		res.status(403).send('Merci de vous co')
+	}
 
 }
 
@@ -131,5 +120,4 @@ function data(req, res) {
 module.exports.signin = signin;
 module.exports.signup = signup;
 module.exports.signout = signout;
-module.exports.profile = profile;
 module.exports.data = data;

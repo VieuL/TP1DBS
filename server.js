@@ -61,16 +61,17 @@ opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = "My so secret sentence";
 
 passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
-    User.findById(jwt_payload.id)
-    .then((user) => {
-      if (user) {
-        return done(null, user);
-      } else {
-        return done(null, false);
-      }
-    }, (err) => {
-      return done(err, false);
-    });
+  User.findById(jwt_payload.id)
+  .then((user) => {
+    if (user) {
+      return done(null, user);
+    } else {
+      return done(null, false);
+    }
+
+  }, (err) => {
+    return done(err, false);
+  });
 }));
 
 app.use(passport.initialize());

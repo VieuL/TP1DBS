@@ -21,13 +21,8 @@ router.post('/signup', function(req, res) {
 
 });
 
-router.get('/profile', function(req, res) {
-
-	controller.profile(req, res);
-
-});
-
-router.get('/data', function(req, res) {
+// passport.authenticate('jwt', { session: false }),
+router.get('/read_data', function(req, res) {
 	controller.data(req, res);
 })
 
